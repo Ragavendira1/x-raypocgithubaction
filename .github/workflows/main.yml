@@ -29,7 +29,7 @@ jobs:
       run: 'curl -k -H "Content-Type: application/json" --output ./features.zip -X GET -H "Authorization: Bearer ${{ steps.xray-token.outputs.XRAY_TOKEN }}" https://xray.cloud.xpand-it.com/api/v1/export/cucumber?keys=DSO-1'
     - name: Get Feature from Xray issue
       shell: bash
-      run: 'ls'    
+      run: 'ls;sleep 10'    
     - name: Unzip features file
       run: 'unzip -o ./features.zip -d ./IWECProject/Features'
     - name: Build with Maven

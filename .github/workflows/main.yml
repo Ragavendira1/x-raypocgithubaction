@@ -4,8 +4,8 @@ jobs:
   build:
     runs-on: windows-latest
     env:
-      CLIENT_ID: ${{ secrets.client_id }}
-      CLIENT_SECRET: ${{ secrets.client_secret }}
+      CLIENT_ID: ${{ secrets.CLIENT_ID }}
+      CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
       ISSUE_KEY: ${{ secrets.key }}
     steps:
     - uses: actions/checkout@v1

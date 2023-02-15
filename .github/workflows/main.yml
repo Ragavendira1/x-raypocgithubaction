@@ -1,0 +1,36 @@
+name: CI (Jira cloud example)
+on: [push]
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      CLIENT_ID: ${{ secrets.client_id }}
+      CLIENT_SECRET: ${{ secrets.client_secret }}
+      ISSUE_KEY: ${{ secrets.key }}
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Java
+      uses: actions/setup-java@v1
+      with:
+        java-version: '1.8'
+    - name: Cache Maven packages
+      uses: actions/cache@v2
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+    - name: Get Xray Cloud API token
+      id: xray-token
+      shell: bash
+      run: |
+        echo ::set-output name=XRAY_TOKEN::$(curl -H "Content-Type: application/json" -X POST --data "{ \"client_id\": \"$CLIENT_ID\",\"client_secret\": \"$CLIENT_SECRET\" }" https://xray.cloud.xpand-it.com/api/v1/authenticate| tr -d '"')
+    - name: Get Feature from Xray issue
+      shell: bash
+      run: 'curl -H "Content-Type: application/json" --output ./features.zip -X GET -H "Authorization: Bearer ${{ steps.xray-token.outputs.XRAY_TOKEN }}" https://xray.cloud.xpand-it.com/api/v1/export/cucumber?keys=$ISSUE_KEY'
+    - name: Unzip features file
+      run: 'unzip -o ./features.zip -d ./IWECProject/Features'
+    - name: Build with Maven
+      run: mvn compile test --file IWECProject/pom.xml
+    - name: Submit results to Xray
+      shell: bash
+      run: 'curl -H "Content-Type: application/json" -X POST -H "Authorization: Bearer ${{ steps.xray-token.outputs.XRAY_TOKEN }}" --data "@IWECProject/report.json" "https://xray.cloud.xpand-it.com/api/v1/import/execution/cucumber"'

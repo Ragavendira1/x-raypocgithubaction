@@ -26,7 +26,7 @@ jobs:
         echo ::set-output name=XRAY_TOKEN::$(curl -k -H "Content-Type: application/json" -X POST --data "{ \"client_id\": \"$CLIENT_ID\",\"client_secret\": \"$CLIENT_SECRET\" }" https://xray.cloud.xpand-it.com/api/v1/authenticate| tr -d '"')
     - name: Get Feature from Xray issue
       shell: bash
-      run: 'curl -k -H "Content-Type: application/json" --output ./features.zip -X GET -H "Authorization: Bearer ${{ steps.xray-token.outputs.XRAY_TOKEN }}" https://xray.cloud.xpand-it.com/api/v1/export/cucumber?keys=$ISSUE_KEY'
+      run: 'curl -k -H "Content-Type: application/json" --output ./features.zip -X GET -H "Authorization: Bearer ${{ steps.xray-token.outputs.XRAY_TOKEN }}" https://xray.cloud.xpand-it.com/api/v1/export/cucumber?keys=DSO-1'
     - name: Unzip features file
       run: 'unzip -o ./features.zip -d ./IWECProject/Features'
     - name: Build with Maven

@@ -1,0 +1,66 @@
+name: dotnet-xml
+
+on:
+  push:
+    branches:
+    - dotnet-xml
+  pull_request:
+    branches:
+    - dotnet-xml
+    
+jobs:
+  build_and_test:
+
+    env:
+      BUILD_CONFIG: 'Release'
+      SOLUTION: 'Solution1/UnitTest.sln'
+      CLIENT_ID: ${{ secrets.CLIENT_ID }}
+      CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+    runs-on: ubuntu-latest
+    permissions:
+     id-token: write
+     contents: read
+     checks: write
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 6.x
+        
+
+    - name: Restore dependencies
+      run: dotnet restore $SOLUTION
+
+    - name: Build
+      run: dotnet build $SOLUTION --configuration $BUILD_CONFIG
+      
+    - name: Test
+      run: dotnet test $SOLUTION --configuration $BUILD_CONFIG --logger:"xunit;LogFilePath=dotnet-test-result.xml" || true
+      
+    - name: Test Report
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: DotNET Tests
+        path: "**/dotnet-test-result.xml"                        
+        reporter: dotnet-trx    
+        fail-on-error: false
+    - name: Publish Specflow Test Logs
+      if: success() || failure()
+      uses: actions/upload-artifact@v2
+      with:
+        name: test-results
+        path: |
+          **/dotnet-test-result.xml
+    - name: Get Xray Cloud API token
+      id: xray-token
+      shell: bash
+      run: |
+        echo ::set-output name=XRAY_TOKEN::$(curl -k -H "Content-Type: application/json" -X POST --data "{ \"client_id\": \"$CLIENT_ID\",\"client_secret\": \"$CLIENT_SECRET\" }" https://xray.cloud.getxray.app/api/v1/authenticate| tr -d '"')
+    - name: Submit results to Xray
+      shell: bash
+      run: 'curl -k -H "Content-Type: text/xml" -X POST --data "@/home/runner/work/github-actions-poc/github-actions-poc/Solution1/UnitTestProject/dotnet-test-result.xml" -H  "Authorization: Bearer ${{ steps.xray-token.outputs.XRAY_TOKEN }}" https://xray.cloud.getxray.app/api/v1/import/execution/xunit?projectKey=DSO'
+      
